@@ -1,0 +1,13 @@
+services:
+  postgres:
+    image: postgres:18.1-alpine
+    container_name: fastapi-ecommerce-backend-database
+    env_file:
+      - .env
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - fastapi-ecommerce-backend-database-data:/var/lib/postgresql/data
+
+volumes:
+  fastapi-ecommerce-backend-database-data:
