@@ -63,7 +63,8 @@ coverage.xml
 .env
 .env.*
 *.env
-*!.env.example
+# Keep this file tracked:
+!.env.example
 
 # ===============================
 # IDEs / Editors
@@ -89,7 +90,6 @@ Thumbs.db
 # ===============================
 # Django specific
 # ===============================
-*.log
 local_settings.py
 db.sqlite3
 staticfiles/
