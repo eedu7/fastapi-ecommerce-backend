@@ -7,11 +7,11 @@ from sqlalchemy.orm import Load
 
 from core.database import Base
 
-T = TypeVar("T", bound=Base)
+ModelType = TypeVar("ModelType", bound=Base)
 
 
-class BaseRepository(Generic[T]):
-    def __init__(self, model: Type[T], session: AsyncSession) -> None:
+class BaseRepository(Generic[ModelType]):
+    def __init__(self, model: Type[ModelType], session: AsyncSession) -> None:
         self.model = model
         self.session = session
 
@@ -21,29 +21,28 @@ class BaseRepository(Generic[T]):
         limit: int = 20,
         order_by: List[Tuple[str, str]] | None = None,
         options: List[Load] | None = None,
-    ) -> Sequence[T]:
+    ) -> Sequence[ModelType]:
         return await self.get_by(
             skip=skip, limit=limit, order_by=order_by, options=options
         )
 
-    async def get_by_id(self, _id: Any, options: List[Load] | None = None) -> T | None:
-        stmt = select(self.model).where(getattr(self.model, "id") == id)
+    async def get_by_id(
+        self, _id: Any, options: List[Load] | None = None
+    ) -> ModelType | None:
+        stmt = select(self.model).where(getattr(self.model, "id") == _id)
         stmt = self._apply_options(stmt, options)
 
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create(self, data: Mapping[str, Any]) -> T:
+    async def create(self, data: Mapping[str, Any]) -> ModelType:
         instance = self.model(**data)
         self.session.add(instance)
-        await self.session.refresh(instance)
         return instance
 
-    async def update(self, _id: Any, data: Mapping[str, Any]) -> T | None:
-        instance = await self.get_by_id(_id)
-        if instance is None:
-            return None
-
+    async def update(
+        self, instance: ModelType, data: Mapping[str, Any]
+    ) -> ModelType | None:
         for field, value in data.items():
             if not hasattr(instance, field):
                 raise AttributeError(
@@ -51,14 +50,9 @@ class BaseRepository(Generic[T]):
                 )
             setattr(instance, field, value)
 
-        await self.session.refresh(instance)
         return instance
 
-    async def delete(self, _id: Any) -> bool:
-        instance = await self.get_by_id(_id)
-        if not instance:
-            return False
-
+    async def delete(self, instance: ModelType) -> bool:
         await self.session.delete(instance)
         return True
 
@@ -69,7 +63,7 @@ class BaseRepository(Generic[T]):
         skip: int = 0,
         limit: int = 20,
         options: List[Load] | None = None,
-    ) -> Sequence[T]:
+    ) -> Sequence[ModelType]:
         stmt = select(self.model)
 
         stmt = self._apply_options(stmt, options)
