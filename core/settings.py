@@ -16,11 +16,11 @@ class Settings(BaseSettings):
     ENVIRONMENT: Environment = Environment.DEVELOPMENT
 
     # Database
-    DB_HOST: str = Field("postgres", description="Postgres host")
-    DB_PORT: int = Field(5432, description="Postgres port")
-    DB_NAME: str = Field("fastapi-ecommerce-Database", description="Databse name")
-    DB_USER: str = Field("postgres", description="Database user")
-    DB_PASSWORD: str = Field("postgres", description="Database password")
+    POSTGRES_HOST: str = Field("postgres", description="Postgres host")
+    POSTGRES_PORT: int = Field(5432, description="Postgres port")
+    POSTGRES_DB: str = Field("fastapi-ecommerce-Database", description="Databse name")
+    POSTGRES_USER: str = Field("postgres", description="Database user")
+    POSTGRES_PASSWORD: str = Field("postgres", description="Database password")
     DB_POOL_SIZE: int = Field(
         5, description="Number of connections to maintain in the pool"
     )
@@ -37,11 +37,11 @@ class Settings(BaseSettings):
     def DATABASE_URL(self) -> PostgresDsn:
         return PostgresDsn.build(
             scheme="postgresql+asyncpg",
-            username=self.DB_USER,
-            password=self.DB_PASSWORD,
-            host=self.DB_HOST,
-            port=self.DB_PORT,
-            path=f"/{self.DB_NAME}",
+            username=self.POSTGRES_USER,
+            password=self.POSTGRES_PASSWORD,
+            host=self.POSTGRES_HOST,
+            port=self.POSTGRES_PORT,
+            path=self.POSTGRES_DB,
         )
 
     model_config = SettingsConfigDict(
@@ -52,4 +52,5 @@ class Settings(BaseSettings):
     )
 
 
-settings: Settings = Settings()
+settings: Settings = Settings()  # type: ignore
+print(settings.DATABASE_URL)

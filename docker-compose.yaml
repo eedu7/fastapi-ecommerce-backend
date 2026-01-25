@@ -2,12 +2,23 @@ services:
   postgres:
     image: postgres:18.1-alpine
     container_name: fastapi-ecommerce-backend-database
-    env_file:
-      - .env
+    env_file: .env
     ports:
-      - "${DB_PORT}:5432"
+      - "${POSTGRES_PORT}:5432"
     volumes:
       - fastapi-ecommerce-backend-database-data:/var/lib/postgresql/data
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: fastapi-ecommerce-backend-pgadmin
+    env_file: .env
+    ports:
+      - "${PGADMIN_PORT}:80"
+    depends_on:
+      - postgres
+    volumes:
+      - fastapi-ecommerce-backend-pgadmin-data:/var/lib/pgadmin
+
 volumes:
   fastapi-ecommerce-backend-database-data:
+  fastapi-ecommerce-backend-pgadmin-data:
