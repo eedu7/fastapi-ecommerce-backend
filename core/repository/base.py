@@ -1,5 +1,5 @@
 from collections.abc import Mapping, Sequence
-from typing import Any, Generic, Iterable, List, Tuple, Type, TypeVar
+from typing import Any, Generic, List, Tuple, Type, TypeVar
 
 from sqlalchemy import asc, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,41 +22,33 @@ class BaseRepository(Generic[ModelType]):
         order_by: List[Tuple[str, str]] | None = None,
         options: List[Load] | None = None,
     ) -> Sequence[ModelType]:
-        return await self.get_by(
-            skip=skip, limit=limit, order_by=order_by, options=options
+        return await self.get_many_by(
+            skip=skip,
+            limit=limit,
+            order_by=order_by,
+            options=options,
         )
 
     async def get_by_id(
-        self, _id: Any, options: List[Load] | None = None
+        self,
+        id_: Any,
+        options: List[Load] | None = None,
     ) -> ModelType | None:
-        stmt = select(self.model).where(getattr(self.model, "id") == _id)
+        return await self.session.get(self.model, id_, options=options)
+
+    async def get_one_by(
+        self,
+        filters: Mapping[str, Any] | None = None,
+        options: List[Load] | None = None,
+    ) -> ModelType | None:
+        stmt = select(self.model)
         stmt = self._apply_options(stmt, options)
+        stmt = self._apply_filters(stmt, filters)
 
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create(self, data: Mapping[str, Any]) -> ModelType:
-        instance = self.model(**data)
-        self.session.add(instance)
-        return instance
-
-    async def update(
-        self, instance: ModelType, data: Mapping[str, Any]
-    ) -> ModelType | None:
-        for field, value in data.items():
-            if not hasattr(instance, field):
-                raise AttributeError(
-                    f"Model {self.model.__name__} has no attribute {field}"
-                )
-            setattr(instance, field, value)
-
-        return instance
-
-    async def delete(self, instance: ModelType) -> bool:
-        await self.session.delete(instance)
-        return True
-
-    async def get_by(
+    async def get_many_by(
         self,
         filters: Mapping[str, Any] | None = None,
         order_by: List[Tuple[str, str]] | None = None,
@@ -71,8 +63,34 @@ class BaseRepository(Generic[ModelType]):
         stmt = self._apply_order_by(stmt, order_by)
 
         stmt = stmt.offset(skip).limit(limit)
+
         result = await self.session.execute(stmt)
         return result.scalars().all()
+
+    async def create(self, data: Mapping[str, Any]) -> ModelType:
+        instance = self.model(**data)
+        self.session.add(instance)
+        await self.session.flush()
+        return instance
+
+    async def update(
+        self,
+        instance: ModelType,
+        data: Mapping[str, Any],
+    ) -> ModelType:
+        for field, value in data.items():
+            if not hasattr(instance, field):
+                raise AttributeError(
+                    f"Model {self.model.__name__} has no attribute '{field}'"
+                )
+            setattr(instance, field, value)
+
+        await self.session.flush()
+        return instance
+
+    async def delete(self, instance: ModelType) -> None:
+        await self.session.delete(instance)
+        await self.session.flush()
 
     def _apply_filters(self, stmt, filters: Mapping[str, Any] | None):
         if not filters:
@@ -82,9 +100,10 @@ class BaseRepository(Generic[ModelType]):
             column = getattr(self.model, field, None)
             if column is None:
                 raise AttributeError(
-                    f"Model {self.model.__name__} has no attribute {field}"
+                    f"Model {self.model.__name__} has no attribute '{field}'"
                 )
-            if isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
+
+            if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
                 stmt = stmt.where(column.in_(value))
             else:
                 stmt = stmt.where(column == value)
@@ -95,18 +114,17 @@ class BaseRepository(Generic[ModelType]):
         if not order_by:
             return stmt
 
+        orders = []
         for field, direction in order_by:
             column = getattr(self.model, field, None)
             if column is None:
                 raise AttributeError(
-                    f"Model {self.model.__name__} has no attribute {field}"
+                    f"Model {self.model.__name__} has no attribute '{field}'"
                 )
 
-            if direction.lower() == "desc":
-                stmt = stmt.order_by(desc(column))
-            else:
-                stmt = stmt.order_by(asc(column))
-        return stmt
+            orders.append(desc(column) if direction.lower() == "desc" else asc(column))
+
+        return stmt.order_by(*orders)
 
     def _apply_options(self, stmt, options: List[Load] | None):
         if not options:
