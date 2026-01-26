@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.controllers import AuthController
 from app.repositories import UserRepository
 from core.database import get_db
 
@@ -13,3 +14,9 @@ class Factory:
         session: Annotated[AsyncSession, Depends(get_db)],
     ) -> UserRepository:
         return UserRepository(session)
+
+    @staticmethod
+    async def get_auth_controller(
+        user_repository: Annotated[UserRepository, Depends(get_user_repository)],
+    ) -> AuthController:
+        return AuthController(user_repository)

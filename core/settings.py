@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     # Project Environment
     ENVIRONMENT: Environment = Environment.DEVELOPMENT
 
+    # JWT
+    JWT_SECRET: str = "secret"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+    JWT_REFRESH_TOKEN_EXPIRE_MINUTES: int = 10_080
+
     # Database
     POSTGRES_HOST: str = Field("postgres", description="Postgres host")
     POSTGRES_PORT: int = Field(5432, description="Postgres port")
