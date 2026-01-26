@@ -12,3 +12,8 @@ tasks:
       - uv run ruff check --fix .
       - uv run ruff format .
     silent: true
+
+  dev:
+    desc: Dev server
+    cmds:
+      - uv run fastapi dev main.py

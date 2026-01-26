@@ -1,6 +1,3 @@
-def main():
-    print("Hello from fastapi-ecommerce-backend!")
+from core.server import make_server
 
-
-if __name__ == "__main__":
-    main()
+app = make_server()

@@ -29,6 +29,7 @@ class BaseController(Generic[ModelType]):
     async def create(self, attributes: Mapping[str, Any]) -> ModelType:
         instance = await self.repository.create(attributes)
         await self._flush()
+        await self._commit()
         return instance
 
     async def update(self, _id: UUID, attributes: Mapping[str, Any]) -> ModelType:
@@ -40,9 +41,9 @@ class BaseController(Generic[ModelType]):
 
     async def delete(self, _id: UUID) -> bool:
         db_obj = await self.get_by_id(_id)
-        deleted = await self.repository.delete(db_obj)
+        await self.repository.delete(db_obj)
         await self._commit()
-        return deleted
+        return True
 
     async def _flush(self) -> None:
         await self.repository.session.flush()

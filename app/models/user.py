@@ -9,7 +9,7 @@ class User(Base, PrimaryKeyMixin, TimestampMixin):
     __tablename__ = "users"
 
     username: Mapped[str] = mapped_column(
-        String(100), nullable=False, index=True, unique=True
+        String(40), nullable=False, index=True, unique=True
     )
     email: Mapped[str] = mapped_column(
         String(255), nullable=False, index=True, unique=True

@@ -59,4 +59,3 @@ class Settings(BaseSettings):
 
 
 settings: Settings = Settings()  # type: ignore
-print(settings.DATABASE_URL)
