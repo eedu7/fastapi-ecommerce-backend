@@ -69,3 +69,13 @@ async def change_password(request: Request):
 @router.get("/me")
 async def get_user(request: Request):
     pass
+
+
+@router.get("/oauth/{provider}")
+async def social_provider(request: Request):
+    pass
+
+
+@router.get("/oauth/{provider}/callback")
+async def social_provider_callback(request: Request):
+    pass

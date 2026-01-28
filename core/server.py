@@ -13,6 +13,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from api import router
 from core.limiter import init_limiter
 from core.middlewares import RequestLoggingMiddleware
+from core.redis import init_redis
 from core.settings import settings
 
 
@@ -25,7 +26,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     )
 
     try:
-        redis = aioredis.from_url(str(settings.REDIS_URL))
+        redis = init_redis()
         FastAPICache.init(RedisBackend(redis), prefix=settings.CACHING_PREFIX)
         logger.info(
             {"event": "cache_initialized", "backend": "redis", "prefix": settings.CACHING_PREFIX}
