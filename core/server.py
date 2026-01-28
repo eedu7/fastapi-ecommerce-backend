@@ -9,6 +9,7 @@ from slowapi.middleware import SlowAPIMiddleware
 
 from api import router
 from core.limiter import init_limiter
+from core.middlewares import RequestLoggingMiddleware
 from core.settings import settings
 
 
@@ -25,6 +26,7 @@ def init_router(app_: FastAPI) -> None:
 
 def make_middleware(app_: FastAPI) -> None:
     app_.add_middleware(SlowAPIMiddleware)
+    app_.add_middleware(RequestLoggingMiddleware)
 
 
 def make_server() -> FastAPI:
