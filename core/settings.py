@@ -1,4 +1,5 @@
 from enum import StrEnum
+from pathlib import Path
 
 from pydantic import Field, PostgresDsn, RedisDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -9,6 +10,15 @@ class Environment(StrEnum):
     PRODUCTION = "production"
     STAGING = "staging"
     TESTING = "testing"
+
+
+class LogLevel(StrEnum):
+    TRACE = "TRACE"
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
 
 
 class Settings(BaseSettings):
@@ -41,6 +51,22 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: str = ""
+
+    # Caching
+    CACHING_PREFIX: str = "fastapi-cache"
+    CACHING_DEFAULT_TTL: int = 300  # seconds (5 min)
+
+    # Rate Limit
+    RATE_LIMIT_DEFAULT: str = "100/minute"
+
+    # Log
+    LOG_LEVEL: LogLevel = LogLevel.INFO
+    LOG_DIR: Path = Path("logs")
+    LOG_JSON: bool = True
+    LOG_TO_FILE: bool = True
+    LOG_ROTATION: str = Field("1 week", description="Log rotation interval")
+    LOG_RETENTION: str = Field("1 month", description="Log retention period")
+    LOG_COMPRESSION: str | None = Field(None, description="Log compression (e.g. zip, gz, tar)")
 
     @computed_field
     @property

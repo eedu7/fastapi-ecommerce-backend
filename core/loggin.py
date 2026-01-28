@@ -1,17 +1,19 @@
-import sys
-from pathlib import Path
-
 from loguru import logger
 
-LOG_DIR = Path("logs")
-LOG_DIR.mkdir(exist_ok=True)
-
-logger.remove()
+from core.settings import settings
 
 
-logger.add(sys.stdout, serialize=True, level="INFO")
+def setup_logging() -> None:
+    logger.remove()
 
-
-logger.add(
-    LOG_DIR / "app.log", rotation="1 week", retention="1 month", serialize=True, level="INFO"
-)
+    if settings.LOG_TO_FILE:
+        settings.LOG_DIR.mkdir(parents=True, exist_ok=True)
+        logger.add(
+            settings.LOG_DIR / "app.log",
+            level=settings.LOG_LEVEL,
+            serialize=settings.LOG_JSON,
+            rotation=settings.LOG_ROTATION,
+            retention=settings.LOG_RETENTION,
+            compression=settings.LOG_COMPRESSION if settings.LOG_COMPRESSION else None,
+            enqueue=True,
+        )

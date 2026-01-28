@@ -1,9 +1,12 @@
+import os
+import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
+from loguru import logger
 from redis import asyncio as aioredis
 from slowapi.middleware import SlowAPIMiddleware
 
@@ -15,9 +18,25 @@ from core.settings import settings
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    start_time = time.time()
+
+    logger.info(
+        {"event": "server_starting", "pid": os.getpid(), "environment": settings.ENVIRONMENT}
+    )
+
     redis = aioredis.from_url(str(settings.REDIS_URL))
-    FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
+    FastAPICache.init(RedisBackend(redis), prefix=settings.CACHING_PREFIX)
+
+    logger.info(
+        {
+            "event": "server_started",
+            "pid": os.getpid(),
+            "startup_time_ms": round((time.time() - start_time) * 1000, 2),
+        }
+    )
     yield
+
+    logger.info({"event": "server_stopping", "pid": os.getpid()})
 
 
 def init_router(app_: FastAPI) -> None:

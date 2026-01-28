@@ -6,7 +6,9 @@ from slowapi.util import get_remote_address
 from core.settings import settings
 
 limiter = Limiter(
-    key_func=get_remote_address, storage_uri=str(settings.REDIS_URL), default_limits=["100/minutes"]
+    key_func=get_remote_address,
+    storage_uri=str(settings.REDIS_URL),
+    default_limits=[settings.RATE_LIMIT_DEFAULT],
 )
 
 
