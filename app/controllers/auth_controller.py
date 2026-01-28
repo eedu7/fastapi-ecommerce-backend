@@ -32,7 +32,10 @@ class AuthController(BaseController[User]):
     async def login(self, email: str, password: str):
         user = await self.user_repository.get_by_email(email)
 
-        if user is None or not PasswordManager.verify(password, user.password):
+        if user is None:
+            raise UnauthorizedException("Invalid email or password")
+
+        if not PasswordManager.verify(password, user.password):
             raise UnauthorizedException("Invalid email or password")
 
         token = self._get_token(user)

@@ -19,6 +19,16 @@ services:
     volumes:
       - fastapi-ecommerce-backend-pgadmin-data:/var/lib/pgadmin
 
+  redis:
+    image: redis:8.6-rc1-alpine3.23
+    container_name: fastapi-ecommerce-backend-redis
+    env_file: .env
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - fastapi-ecommerce-backend-redis-data:/data
+
 volumes:
   fastapi-ecommerce-backend-database-data:
   fastapi-ecommerce-backend-pgadmin-data:
+  fastapi-ecommerce-backend-redis-data:

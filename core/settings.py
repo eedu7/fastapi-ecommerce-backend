@@ -1,6 +1,6 @@
 from enum import StrEnum
 
-from pydantic import Field, PostgresDsn, computed_field
+from pydantic import Field, PostgresDsn, RedisDsn, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,9 +27,7 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = Field("fastapi-ecommerce-Database", description="Databse name")
     POSTGRES_USER: str = Field("postgres", description="Database user")
     POSTGRES_PASSWORD: str = Field("postgres", description="Database password")
-    DB_POOL_SIZE: int = Field(
-        5, description="Number of connections to maintain in the pool"
-    )
+    DB_POOL_SIZE: int = Field(5, description="Number of connections to maintain in the pool")
     DB_MAX_OVERFLOW: int = Field(10, description="MAX connections beyond pool_size")
     DB_POOL_RECYCLE: int = Field(
         3600, description="Recycle connections after N seconds (1 hour default)"
@@ -39,7 +37,13 @@ class Settings(BaseSettings):
     )
     DB_ECHO: bool = Field(False, description="Log all SQL statements")
 
+    # Redis
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_PASSWORD: str = ""
+
     @computed_field
+    @property
     def DATABASE_URL(self) -> PostgresDsn:
         return PostgresDsn.build(
             scheme="postgresql+asyncpg",
@@ -48,6 +52,13 @@ class Settings(BaseSettings):
             host=self.POSTGRES_HOST,
             port=self.POSTGRES_PORT,
             path=self.POSTGRES_DB,
+        )
+
+    @computed_field
+    @property
+    def REDIS_URL(self) -> RedisDsn:
+        return RedisDsn.build(
+            scheme="redis", host=self.REDIS_HOST, port=self.REDIS_PORT, password=self.REDIS_PASSWORD
         )
 
     model_config = SettingsConfigDict(
