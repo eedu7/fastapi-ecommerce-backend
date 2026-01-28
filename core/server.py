@@ -7,13 +7,12 @@ from fastapi import FastAPI
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
 from loguru import logger
-from redis import asyncio as aioredis
 from slowapi.middleware import SlowAPIMiddleware
 
 from api import router
 from core.limiter import init_limiter
 from core.middlewares import RequestLoggingMiddleware
-from core.redis import init_redis
+from core.redis import close_redis, init_redis
 from core.settings import settings
 
 
@@ -42,6 +41,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         }
     )
     yield
+    await close_redis()
 
     logger.info({"event": "server_stopping", "pid": os.getpid()})
 
