@@ -11,7 +11,7 @@ from core.limiter import limiter
 router = APIRouter()
 
 
-@router.post("/", response_model=AuthRead, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=AuthRead, status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/hour")
 async def register(
     request: Request,
@@ -29,3 +29,43 @@ async def login(
     controller: Annotated[AuthController, Depends(Factory.get_auth_controller)],
 ):
     return await controller.login(**data.model_dump())
+
+
+@router.post("/logout")
+async def logout(request: Request):
+    pass
+
+
+@router.post("/refresh-token")
+async def refresh_token(request: Request):
+    pass
+
+
+@router.post("/forgot-password")
+async def forgot_password(request: Request):
+    pass
+
+
+@router.post("/reset-password")
+async def reset_password(request: Request):
+    pass
+
+
+@router.post("/verify-email")
+async def verify_email(request: Request):
+    pass
+
+
+@router.post("/resend-verification")
+async def resend_verification(request: Request):
+    pass
+
+
+@router.post("/change-password")
+async def change_password(request: Request):
+    pass
+
+
+@router.get("/me")
+async def get_user(request: Request):
+    pass
