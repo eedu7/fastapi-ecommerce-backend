@@ -24,9 +24,15 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         {"event": "server_starting", "pid": os.getpid(), "environment": settings.ENVIRONMENT}
     )
 
-    redis = aioredis.from_url(str(settings.REDIS_URL))
-    FastAPICache.init(RedisBackend(redis), prefix=settings.CACHING_PREFIX)
-
+    try:
+        redis = aioredis.from_url(str(settings.REDIS_URL))
+        FastAPICache.init(RedisBackend(redis), prefix=settings.CACHING_PREFIX)
+        logger.info(
+            {"event": "cache_initialized", "backend": "redis", "prefix": settings.CACHING_PREFIX}
+        )
+    except Exception as e:
+        logger.exception({"event": "cache_init_failed", "error": str(e)})
+        raise
     logger.info(
         {
             "event": "server_started",

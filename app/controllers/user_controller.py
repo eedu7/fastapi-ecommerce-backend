@@ -1,3 +1,5 @@
+from loguru import logger
+
 from app.models import User
 from app.repositories import UserRepository
 from core.controller import BaseController
@@ -10,9 +12,31 @@ class UserController(BaseController[User]):
         self.user_repository = user_repository
 
     async def get_by_email(self, email: str):
+        logger.info(
+            {
+                "event": "user_fetch_by_email",
+                "stage": "attempt",
+            }
+        )
+
         user = await self.user_repository.get_by_email(email)
 
         if user is None:
-            raise NotFoundException(f"User with email '{email}' not found")
+            logger.warning(
+                {
+                    "event": "user_fetch_by_email",
+                    "stage": "failed",
+                    "reason": "not_found",
+                }
+            )
+            raise NotFoundException("User not found")
+
+        logger.info(
+            {
+                "event": "user_fetch_by_email",
+                "stage": "success",
+                "user_id": user.id,
+            }
+        )
 
         return user
