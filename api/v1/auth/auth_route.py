@@ -5,7 +5,7 @@ from fastapi_cache.decorator import cache
 from pydantic import BaseModel, EmailStr
 
 from app.controllers import AuthController, UserController
-from app.integrations.cache import KeyBuilder
+from app.integrations.cache.key_builder import KeyBuilder
 from app.integrations.email.client import EmailClient
 from app.schemas.request.auth_request import AuthLogin, AuthRegister
 from app.schemas.response.auth_response import AuthRead
@@ -76,7 +76,8 @@ async def change_password(request: Request):
 @router.get("/me", dependencies=[Depends(AuthenticationRequired)])
 @cache(expire=60, key_builder=KeyBuilder.user_me_cache_key)
 async def get_user(
-    request: Request, controller: Annotated[UserController, Depends(Factory.get_user_controller)]
+    request: Request,
+    controller: Annotated[UserController, Depends(Factory.get_user_controller)],
 ):
     return await controller.get_by_id(request.state.user.id)
 
