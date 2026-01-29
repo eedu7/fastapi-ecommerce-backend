@@ -58,14 +58,6 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             )
             await session.rollback()
             raise
-        finally:
-            await session.close()
-            logger.debug(
-                {
-                    "event": "db_session",
-                    "stage": "close",
-                }
-            )
 
 
 async def dispose_db_engine() -> None:
