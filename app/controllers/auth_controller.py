@@ -91,6 +91,9 @@ class AuthController(BaseController[User]):
 
         return {"user": user, "token": self._get_token(user)}
 
+    def _get_jti(self, token: str) -> str:
+        return self.jwt_manager.decode_ignore_exp(token)["jti"]
+
     def _get_token(self, user: User) -> Token:
         payload = {
             "sub": str(user.id),

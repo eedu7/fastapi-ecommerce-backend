@@ -4,15 +4,14 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi_cache import FastAPICache
-from fastapi_cache.backends.redis import RedisBackend
 from loguru import logger
 from slowapi.middleware import SlowAPIMiddleware
 
 from api import router
+from app.integrations.redis.cache import init_cache
+from app.integrations.redis.client import close_redis
 from core.limiter import init_limiter
 from core.middlewares import RequestLoggingMiddleware
-from core.redis import close_redis, init_redis
 from core.settings import settings
 
 
@@ -24,15 +23,9 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         {"event": "server_starting", "pid": os.getpid(), "environment": settings.ENVIRONMENT}
     )
 
-    try:
-        redis = init_redis()
-        FastAPICache.init(RedisBackend(redis), prefix=settings.CACHING_PREFIX)
-        logger.info(
-            {"event": "cache_initialized", "backend": "redis", "prefix": settings.CACHING_PREFIX}
-        )
-    except Exception as e:
-        logger.exception({"event": "cache_init_failed", "error": str(e)})
-        raise
+    # Initializing cache
+    await init_cache()
+
     logger.info(
         {
             "event": "server_started",

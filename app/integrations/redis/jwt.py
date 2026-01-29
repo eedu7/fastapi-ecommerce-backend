@@ -1,10 +1,11 @@
 from typing import Literal
 
-from core.redis import init_redis
 from core.settings import settings
 
+from .client import init_redis
 
-class TokenManager:
+
+class TokenStore:
     def __init__(self) -> None:
         self.redis = init_redis()
 

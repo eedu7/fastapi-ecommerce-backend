@@ -1,8 +1,10 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, EmailStr
 
 from app.controllers import AuthController
+from app.integrations.email.client import EmailClient
 from app.schemas.request.auth_request import AuthLogin, AuthRegister
 from app.schemas.response.auth_response import AuthRead
 from core.factory import Factory
@@ -79,3 +81,23 @@ async def social_provider(request: Request):
 @router.get("/oauth/{provider}/callback")
 async def social_provider_callback(request: Request):
     pass
+
+
+class TestEmailRequest(BaseModel):
+    to: EmailStr
+    subject: str = "Test Email"
+    html: str = "<h1>This is a test email</h1><p>If you receive this, SMTP is working!</p>"
+
+
+@router.post("/test-email", status_code=status.HTTP_200_OK)
+async def test_email(
+    data: TestEmailRequest, email_client: Annotated[EmailClient, Depends(EmailClient)]
+):
+    try:
+        await email_client.send(to=data.to, subject=data.subject, html=data.html)
+        return {"message": f"Test email sent successfully to {data.to}"}
+    except Exception as e:
+        return HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send email: {str(e)}",
+        )

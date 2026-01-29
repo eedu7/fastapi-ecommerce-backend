@@ -68,6 +68,14 @@ class Settings(BaseSettings):
     LOG_RETENTION: str = Field("1 month", description="Log retention period")
     LOG_COMPRESSION: str | None = Field(None, description="Log compression (e.g. zip, gz, tar)")
 
+    # SMTP
+    SMTP_SERVER: str = "YOUR_SMTP_SERVER"
+    SMTP_PORT: int = 587
+    SMTP_LOGIN: str = "YOUR_SMTP_LOGIN"
+    SMTP_KEY: str = "YOUR_SMTP_KEY"
+    SMTP_FROM_NAME: str = "open-vendor"
+    SMTP_FROM: str = "open_vendor@gmail.com"
+
     @computed_field
     @property
     def DATABASE_URL(self) -> PostgresDsn:
