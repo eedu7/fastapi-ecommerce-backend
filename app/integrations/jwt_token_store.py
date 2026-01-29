@@ -2,10 +2,10 @@ from typing import Literal
 
 from core.settings import settings
 
-from .client import init_redis
+from .redis.client import init_redis
 
 
-class TokenStore:
+class JWTTokenStore:
     def __init__(self) -> None:
         self.redis = init_redis()
 

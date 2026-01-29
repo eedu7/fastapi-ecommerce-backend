@@ -87,3 +87,6 @@ class JWTManager:
             )
         except JWTError:
             raise JWTDecodeError()
+
+    def get_jti(self, token: str) -> str:
+        return self.decode_ignore_exp(token)["jti"]

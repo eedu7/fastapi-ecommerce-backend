@@ -60,3 +60,8 @@ class AuthLogin(AuthBase):
     )
 
     model_config = ConfigDict(extra="forbid")
+
+
+class AuthLogout(BaseModel):
+    access_token: str = Field(..., min_length=1, description="Access Token")
+    refresh_token: str = Field(..., min_length=1, description="Refresh Token")

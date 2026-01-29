@@ -1,15 +1,13 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, Request, status
 from fastapi_cache.decorator import cache
-from pydantic import BaseModel, EmailStr
 
 from app.controllers import AuthController, UserController
 from app.integrations.cache.key_builder import KeyBuilder
-from app.integrations.email.client import EmailClient
-from app.schemas.request.auth_request import AuthLogin, AuthRegister
+from app.schemas.request.auth_request import AuthLogin, AuthLogout, AuthRegister
 from app.schemas.response.auth_response import AuthRead
-from core.dependencies import AuthenticationRequired
+from core.dependencies import authentication_required
 from core.factory import Factory
 from core.limiter import limiter
 
@@ -37,8 +35,12 @@ async def login(
 
 
 @router.post("/logout")
-async def logout(request: Request):
-    pass
+async def logout(
+    request: Request,
+    data: AuthLogout,
+    controller: Annotated[AuthController, Depends(Factory.get_auth_controller)],
+):
+    return await controller.logout(**data.model_dump())
 
 
 @router.post("/refresh-token")
@@ -46,68 +48,10 @@ async def refresh_token(request: Request):
     pass
 
 
-@router.post("/forgot-password")
-async def forgot_password(request: Request):
-    pass
-
-
-@router.post("/reset-password")
-async def reset_password(request: Request):
-    pass
-
-
-@router.get("/verify-email")
-async def verify_email(
-    request: Request, email: Annotated[EmailStr, Query()], token: Annotated[str, Query()]
-):
-    return {"email": email, "token": token}
-
-
-@router.post("/resend-verification")
-async def resend_verification(request: Request):
-    pass
-
-
-@router.post("/change-password")
-async def change_password(request: Request):
-    pass
-
-
-@router.get("/me", dependencies=[Depends(AuthenticationRequired)])
+@router.get("/me", dependencies=[Depends(authentication_required)])
 @cache(expire=60, key_builder=KeyBuilder.user_me_cache_key)
 async def get_user(
     request: Request,
     controller: Annotated[UserController, Depends(Factory.get_user_controller)],
 ):
     return await controller.get_by_id(request.state.user.id)
-
-
-@router.get("/oauth/{provider}")
-async def social_provider(request: Request):
-    pass
-
-
-@router.get("/oauth/{provider}/callback")
-async def social_provider_callback(request: Request):
-    pass
-
-
-class TestEmailRequest(BaseModel):
-    to: EmailStr
-    subject: str = "Test Email"
-    html: str = "<h1>This is a test email</h1><p>If you receive this, SMTP is working!</p>"
-
-
-# TODO: Remove this endpoint
-@router.post("/test-email", status_code=status.HTTP_200_OK)
-async def test_email(
-    data: TestEmailRequest, email_client: Annotated[EmailClient, Depends(EmailClient)]
-):
-    try:
-        await email_client.send(to=data.to, subject=data.subject, html=data.html)
-        return {"message": f"Test email sent successfully to {data.to}"}
-    except Exception as e:
-        return HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to send email: {str(e)}",
-        )

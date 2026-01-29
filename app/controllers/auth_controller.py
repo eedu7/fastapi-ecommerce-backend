@@ -1,5 +1,6 @@
 from loguru import logger
 
+from app.integrations.jwt_token_store import JWTTokenStore
 from app.models import DBUser
 from app.repositories import UserRepository
 from app.schemas.extras import Token
@@ -13,6 +14,7 @@ class AuthController(BaseController[DBUser]):
         super().__init__(DBUser, user_repository)
         self.user_repository = user_repository
         self.jwt_manager = JWTManager()
+        self.jwt_token_store = JWTTokenStore()
 
     async def register(self, username: str, email: str, password: str):
         logger.info(
@@ -91,8 +93,9 @@ class AuthController(BaseController[DBUser]):
 
         return {"user": user, "token": self._get_token(user)}
 
-    def _get_jti(self, token: str) -> str:
-        return self.jwt_manager.decode_ignore_exp(token)["jti"]
+    async def logout(self, access_token: str, refresh_token: str):
+        await self.jwt_token_store.store_token(self.jwt_manager.get_jti(access_token))
+        await self.jwt_token_store.store_token(self.jwt_manager.get_jti(refresh_token))
 
     def _get_token(self, user: DBUser) -> Token:
         payload = {
