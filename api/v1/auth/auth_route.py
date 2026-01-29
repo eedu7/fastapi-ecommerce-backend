@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import BaseModel, EmailStr
 
 from app.controllers import AuthController
@@ -53,9 +53,11 @@ async def reset_password(request: Request):
     pass
 
 
-@router.post("/verify-email")
-async def verify_email(request: Request):
-    pass
+@router.get("/verify-email")
+async def verify_email(
+    request: Request, email: Annotated[EmailStr, Query()], token: Annotated[str, Query()]
+):
+    return {"email": email, "token": token}
 
 
 @router.post("/resend-verification")

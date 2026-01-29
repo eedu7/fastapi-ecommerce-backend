@@ -1,5 +1,6 @@
 from loguru import logger
 
+from app.integrations.email.service import EmailService
 from app.models import User
 from app.repositories import UserRepository
 from app.schemas.extras import Token

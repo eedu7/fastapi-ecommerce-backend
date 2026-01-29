@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     # Project Environment
     ENVIRONMENT: Environment = Environment.DEVELOPMENT
 
+    # Frontend
+    FRONTEND_BASE_URL: str = "http://localhost:3000"
+
     # JWT
     JWT_SECRET: str = "secret"
     JWT_ALGORITHM: str = "HS256"

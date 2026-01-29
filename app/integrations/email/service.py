@@ -12,13 +12,12 @@ class EmailService:
         self.verify_ttl = 60 * 60 * 24  # 24 hours
         self.redis = init_redis()
 
-    async def send_otp(self, email: str, otp: str) -> None:
-        await self.client.send(to=email, subject="Your OTP Code", html=templates.otp_email(otp))
-
     async def send_verification(self, email: str) -> None:
         token = await self._create_verification_token(email)
         await self.client.send(
-            to=email, subject="Verify your email", html=templates.verify_email(token)
+            to=email,
+            subject="Verify your email",
+            html=templates.verify_email(token=token, email=email),
         )
 
     async def _create_verification_token(self, email: str) -> str:
