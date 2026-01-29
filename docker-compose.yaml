@@ -28,6 +28,22 @@ services:
     volumes:
       - fastapi-ecommerce-backend-redis-data:/data
 
+  prometheus:
+    image: prom/prometheus:main-distroless
+    container_name: fastapi-ecommerce-backend-prometheus
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:main
+    container_name: fastapi-ecommerce-backend-grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
 volumes:
   fastapi-ecommerce-backend-database-data:
   fastapi-ecommerce-backend-pgadmin-data:

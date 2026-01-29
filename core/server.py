@@ -8,6 +8,7 @@ from loguru import logger
 from slowapi.middleware import SlowAPIMiddleware
 
 from api import router
+from app.integrations.metrics.prometheus import setup_prometheus
 from app.integrations.redis.cache import init_cache
 from app.integrations.redis.client import close_redis
 from core.limiter import init_limiter
@@ -54,5 +55,6 @@ def make_server() -> FastAPI:
     make_middleware(app)
     init_limiter(app)
     init_router(app)
+    setup_prometheus(app)
 
     return app
