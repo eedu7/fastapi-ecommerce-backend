@@ -89,6 +89,7 @@ class TestEmailRequest(BaseModel):
     html: str = "<h1>This is a test email</h1><p>If you receive this, SMTP is working!</p>"
 
 
+# TODO: Remove this endpoint
 @router.post("/test-email", status_code=status.HTTP_200_OK)
 async def test_email(
     data: TestEmailRequest, email_client: Annotated[EmailClient, Depends(EmailClient)]
