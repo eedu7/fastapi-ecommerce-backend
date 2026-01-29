@@ -80,9 +80,7 @@ class BaseRepository(Generic[ModelType]):
     ) -> ModelType:
         for field, value in data.items():
             if not hasattr(instance, field):
-                raise AttributeError(
-                    f"Model {self.model.__name__} has no attribute '{field}'"
-                )
+                raise AttributeError(f"Model {self.model.__name__} has no attribute '{field}'")
             setattr(instance, field, value)
 
         await self.session.flush()
@@ -99,9 +97,7 @@ class BaseRepository(Generic[ModelType]):
         for field, value in filters.items():
             column = getattr(self.model, field, None)
             if column is None:
-                raise AttributeError(
-                    f"Model {self.model.__name__} has no attribute '{field}'"
-                )
+                raise AttributeError(f"Model {self.model.__name__} has no attribute '{field}'")
 
             if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
                 stmt = stmt.where(column.in_(value))
@@ -118,9 +114,7 @@ class BaseRepository(Generic[ModelType]):
         for field, direction in order_by:
             column = getattr(self.model, field, None)
             if column is None:
-                raise AttributeError(
-                    f"Model {self.model.__name__} has no attribute '{field}'"
-                )
+                raise AttributeError(f"Model {self.model.__name__} has no attribute '{field}'")
 
             orders.append(desc(column) if direction.lower() == "desc" else asc(column))
 

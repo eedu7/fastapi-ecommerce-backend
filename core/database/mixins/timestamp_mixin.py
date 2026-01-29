@@ -15,6 +15,4 @@ class TimestampMixin:
         nullable=False,
     )
 
-    deleted_at: Mapped[DateTime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    deleted_at: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)

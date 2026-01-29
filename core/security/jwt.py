@@ -28,9 +28,7 @@ class JWTManager:
 
     def _get_expire_time(self, token_type: TokenType) -> datetime:
         minutes = (
-            self.access_expire_minutes
-            if token_type == "access"
-            else self.refresh_expire_minutes
+            self.access_expire_minutes if token_type == "access" else self.refresh_expire_minutes
         )
         return datetime.now(timezone.utc) + timedelta(minutes=minutes)
 

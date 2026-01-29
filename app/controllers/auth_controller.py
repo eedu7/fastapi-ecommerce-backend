@@ -1,7 +1,6 @@
 from loguru import logger
 
-from app.integrations.email.service import EmailService
-from app.models import User
+from app.models import DBUser
 from app.repositories import UserRepository
 from app.schemas.extras import Token
 from core.controller import BaseController
@@ -9,9 +8,9 @@ from core.exceptions import BadRequestException, UnauthorizedException
 from core.security import JWTManager, PasswordManager
 
 
-class AuthController(BaseController[User]):
+class AuthController(BaseController[DBUser]):
     def __init__(self, user_repository: UserRepository) -> None:
-        super().__init__(User, user_repository)
+        super().__init__(DBUser, user_repository)
         self.user_repository = user_repository
         self.jwt_manager = JWTManager()
 
@@ -95,7 +94,7 @@ class AuthController(BaseController[User]):
     def _get_jti(self, token: str) -> str:
         return self.jwt_manager.decode_ignore_exp(token)["jti"]
 
-    def _get_token(self, user: User) -> Token:
+    def _get_token(self, user: DBUser) -> Token:
         payload = {
             "sub": str(user.id),
             "email": user.email,

@@ -2,15 +2,15 @@ from uuid import UUID
 
 from loguru import logger
 
-from app.models import User
+from app.models import DBUser
 from app.repositories import UserRepository
 from core.controller import BaseController
 from core.exceptions import NotFoundException
 
 
-class UserController(BaseController[User]):
+class UserController(BaseController[DBUser]):
     def __init__(self, user_repository: UserRepository) -> None:
-        super().__init__(User, user_repository)
+        super().__init__(DBUser, user_repository)
         self.user_repository = user_repository
 
     async def get_by_email(self, email: str):
