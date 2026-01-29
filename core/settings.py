@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     # Frontend
     FRONTEND_BASE_URL: str = "http://localhost:3000"
 
+    # CORS
+    CORS_ORIGINS: str = "*"
+    CORS_ALLOW_CREDENTIALS: bool = False
+
     # JWT
     JWT_SECRET: str = "secret"
     JWT_ALGORITHM: str = "HS256"

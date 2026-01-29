@@ -11,7 +11,7 @@ from api import router
 from app.integrations.redis.cache import init_cache
 from app.integrations.redis.client import close_redis
 from core.limiter import init_limiter
-from core.middlewares import RequestLoggingMiddleware
+from core.middlewares import CorsMiddleware, RequestLoggingMiddleware
 from core.settings import settings
 
 
@@ -44,6 +44,7 @@ def init_router(app_: FastAPI) -> None:
 
 
 def make_middleware(app_: FastAPI) -> None:
+    app_.add_middleware(CorsMiddleware)
     app_.add_middleware(SlowAPIMiddleware)
     app_.add_middleware(RequestLoggingMiddleware)
 
