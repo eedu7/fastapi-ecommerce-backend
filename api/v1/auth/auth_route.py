@@ -45,10 +45,11 @@ async def logout(
     return await controller.logout(**data.model_dump(), user_id=request.state.user.id)
 
 
-@router.post("/refresh-token")
-@limiter.limit("5/minute")
-async def refresh_token(request: Request):
-    pass
+# TODO: Refresh Route
+# @router.post("/refresh-token")
+# @limiter.limit("5/minute")
+# async def refresh_token(request: Request):
+#     pass
 
 
 @router.get("/me", dependencies=[Depends(authentication_required)])
