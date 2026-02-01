@@ -1,5 +1,8 @@
+from uuid import UUID
+
 from loguru import logger
 
+from app.integrations.cache.user_cache import UserCache
 from app.integrations.jwt_token_store import JWTTokenStore
 from app.models import DBUser
 from app.repositories import UserRepository
@@ -93,9 +96,44 @@ class AuthController(BaseController[DBUser]):
 
         return {"user": user, "token": self._get_token(user)}
 
-    async def logout(self, access_token: str, refresh_token: str):
-        await self.jwt_token_store.store_token(self.jwt_manager.get_jti(access_token))
-        await self.jwt_token_store.store_token(self.jwt_manager.get_jti(refresh_token))
+    async def logout(self, user_id: UUID, access_token: str, refresh_token: str):
+        logger.info(
+            {
+                "event": "user_logout",
+                "stage": "attempt",
+                "user_id": str(user_id),
+            }
+        )
+
+        try:
+            access_jti = self.jwt_manager.get_jti(access_token)
+            refresh_jti = self.jwt_manager.get_jti(refresh_token)
+
+            await UserCache.invalidate_me(user_id)
+
+            await self.jwt_token_store.store_token(access_jti)
+            await self.jwt_token_store.store_token(refresh_jti)
+
+            logger.info(
+                {
+                    "event": "user_logout",
+                    "stage": "success",
+                    "user_id": str(user_id),
+                    "access_jti": access_jti,
+                    "refresh_jti": refresh_jti,
+                }
+            )
+
+        except Exception as exc:
+            logger.exception(
+                {
+                    "event": "user_logout",
+                    "stage": "failed",
+                    "user_id": str(user_id),
+                    "error": str(exc),
+                }
+            )
+            raise BadRequestException("Logout failed")
 
     def _get_token(self, user: DBUser) -> Token:
         payload = {

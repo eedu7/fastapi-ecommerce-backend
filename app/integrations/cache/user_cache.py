@@ -6,5 +6,6 @@ from .keys import CacheKeys
 
 
 class UserCache:
-    async def invalidate_me(self, user_id: str | UUID) -> None:
+    @staticmethod
+    async def invalidate_me(user_id: str | UUID) -> None:
         await FastAPICache.clear(key=CacheKeys.user_me(user_id))
