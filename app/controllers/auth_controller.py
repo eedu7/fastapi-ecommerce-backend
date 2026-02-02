@@ -1,13 +1,12 @@
 from uuid import UUID
 
-
 from app.integrations.cache.user_cache import UserCache
 from app.integrations.jwt_token_store import JWTTokenStore
 from app.models import DBUser
 from app.repositories import UserRepository
 from app.schemas.extras import Token
 from core.controller import BaseController
-from core.exceptions import BadRequestException, UnauthorizedException
+from core.exceptions import BadRequestException, NotFoundException, UnauthorizedException
 from core.security import JWTManager, PasswordManager
 
 
@@ -55,6 +54,25 @@ class AuthController(BaseController[DBUser]):
 
         except Exception:
             raise BadRequestException("Logout failed")
+
+    async def refresh_token(self, refresh_token: str):
+        jti = self.jwt_manager.get_jti(refresh_token)
+        blacklisted = await self.jwt_token_store.is_token_blacklisted(jti)
+
+        if blacklisted:
+            raise BadRequestException("Invalid token")
+
+        payload = self.jwt_manager.decode_ignore_exp(refresh_token)
+        user_id = payload.get("sub", None)
+
+        if user_id is None:
+            raise NotFoundException("User not found")
+
+        user = await self.get_by_id(user_id)
+
+        await self.jwt_token_store.store_token(jti, "refresh")
+
+        return self._get_token(user)
 
     def _get_token(self, user: DBUser) -> Token:
         payload = {

@@ -1,4 +1,12 @@
-from fastapi import APIRouter
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Request
+from fastapi_cache.decorator import cache
+
+from app.integrations.cache.key_builder import KeyBuilder
+from app.models import DBUser
+from core.dependencies import authentication_required, get_current_user
+from core.limiter import limiter
 
 router = APIRouter()
 
@@ -39,3 +47,13 @@ router = APIRouter()
 #     response_body: name, avatar, join date, reviews
 #     """
 #     pass
+
+
+@router.get("/me", dependencies=[Depends(authentication_required)])
+@limiter.limit("10/minute")
+@cache(expire=60, key_builder=KeyBuilder.user_me_cache_key)
+async def get_user(
+    request: Request,
+    current_user: Annotated[DBUser, Depends(get_current_user)],
+):
+    return current_user
