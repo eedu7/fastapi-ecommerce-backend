@@ -9,7 +9,7 @@ _redis: Redis | None = None
 def init_redis() -> Redis:
     global _redis
     if _redis is None:
-        _redis = aioredis.from_url(str(settings.REDIS_URL), encoding="utf-8", decode_responses=True)
+        _redis = aioredis.from_url(str(settings.REDIS_URL), encoding="utf-8")
     return _redis
 
 
