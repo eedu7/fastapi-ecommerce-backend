@@ -15,7 +15,7 @@ router = APIRouter()
 @router.post("/register", response_model=AuthRead, status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/hour")
 async def register(
-    _: Request,
+    request: Request,
     data: AuthRegister,
     controller: Annotated[AuthController, Depends(Factory.get_auth_controller)],
 ):
@@ -27,7 +27,7 @@ async def register(
 @router.post("/login", response_model=AuthRead, status_code=status.HTTP_200_OK)
 @limiter.limit("10/minute")  # type: ignore
 async def login(
-    _: Request,
+    request: Request,
     data: AuthLogin,
     controller: Annotated[AuthController, Depends(Factory.get_auth_controller)],
 ):
