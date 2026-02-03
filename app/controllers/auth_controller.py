@@ -1,5 +1,6 @@
 from uuid import UUID
 
+
 from app.integrations.cache.user_cache import UserCache
 from app.integrations.jwt_token_store import JWTTokenStore
 from app.models import DBUser
@@ -34,7 +35,11 @@ class AuthController(BaseController[DBUser]):
 
         return {"user": user, "token": self._get_token(user)}
 
-    async def login(self, email: str, password: str):
+    async def login(
+        self,
+        email: str,
+        password: str,
+    ):
         user = await self.user_repository.get_by_email(email)
 
         if user is None or not PasswordManager.verify(password, user.password):

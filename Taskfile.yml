@@ -17,3 +17,8 @@ tasks:
     desc: Dev server
     cmds:
       - uv run fastapi dev main.py
+
+  pro:
+    desc: Production server
+    cmds:
+      - uv run fastapi run main.py
