@@ -83,6 +83,10 @@ class Settings(BaseSettings):
     SMTP_FROM_NAME: str = "open-vendor"
     SMTP_FROM: str = "open_vendor@gmail.com"
 
+    # Google
+    GOOGLE_CLIENT_SECRET: str = "YOUR_GOOGLE_CLIENT_SECRET"
+    GOOGLE_CLIENT_ID: str = "YOUR_GOOGLE_CLIENT_ID"
+
     @computed_field
     @property
     def DATABASE_URL(self) -> PostgresDsn:

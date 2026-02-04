@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from slowapi.middleware import SlowAPIMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
 from api import router
 from app.integrations.metrics.prometheus import setup_prometheus
@@ -10,6 +11,7 @@ from app.integrations.redis.cache import init_cache
 from app.integrations.redis.client import close_redis
 from core.limiter import init_limiter
 from core.middlewares import CorsMiddleware, RequestLoggingMiddleware
+from core.settings import settings
 
 
 @asynccontextmanager
@@ -29,6 +31,9 @@ def make_middleware(app_: FastAPI) -> None:
     app_.add_middleware(CorsMiddleware)
     app_.add_middleware(SlowAPIMiddleware)
     app_.add_middleware(RequestLoggingMiddleware)
+    # TODO: Remove the JWT Secret
+    # TODO: Remove the SessionMiddleware
+    app_.add_middleware(SessionMiddleware, secret_key=settings.JWT_SECRET)
 
 
 def make_server() -> FastAPI:
