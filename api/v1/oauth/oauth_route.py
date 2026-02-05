@@ -18,6 +18,16 @@ oauth.register(
     client_kwargs={"scope": "openid email profile"},
     server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
 )
+oauth.register(
+    name="facebook",
+    client_id=settings.FACEBOOK_APP_ID,
+    client_secret=settings.FACEBOOK_APP_SECRET,
+    authorize_url="https://www.facebook.com/v24.0/dialog/oauth",
+    access_token_url="https://graph.facebook.com/v24.0/oauth/access_token",
+    api_base_url="https://graph.facebook.com/",
+    client_kwargs={"scope": "email public_profile"},
+)
+
 
 OAuthType = Literal["google", "facebook"]
 
@@ -25,12 +35,27 @@ OAuthType = Literal["google", "facebook"]
 # TODO: OAuth Routes
 @router.get("/{provider}")
 async def social_provider(request: Request, provider: Annotated[OAuthType, Path()]):
-    return await oauth.google.authorize_redirect(
-        request, redirect_uri="http://localhost:8000/api/v1/oauth/google/callback"
-    )
+    if provider == "google":
+        return await oauth.google.authorize_redirect(
+            request, redirect_uri="http://localhost:8000/api/v1/oauth/google/callback"
+        )
+    elif provider == "facebook":
+        redirect_uri = f"http://localhost:8000/api/v1/oauth/{provider}/callback"
+        client = oauth.create_client(provider)
+        return await client.authorize_redirect(request, redirect_uri)
 
 
 @router.get("/{provider}/callback")
 async def social_provider_callback(request: Request, provider: Annotated[OAuthType, Path()]):
-    token = await oauth.google.authorize_access_token(request)
-    return {"token": token}
+    if provider == "google":
+        user = await oauth.google.authorize_access_token(request)
+    elif provider == "facebook":
+        client = oauth.create_client(provider)
+        token = await client.authorize_access_token(request)
+        response = await client.get("me?fields=id,name,email,picture", token=token)
+        user = response.json()
+
+    return {
+        "provider": provider,
+        "user": user,
+    }
