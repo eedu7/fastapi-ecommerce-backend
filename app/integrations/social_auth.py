@@ -1,13 +1,21 @@
-from typing import Literal
+from typing import Any, Dict, Literal, TypedDict
 
 from authlib.integrations.starlette_client import OAuth
 from fastapi import Request
 
+from core.exceptions import BadRequestException, UnauthorizedException
 from core.settings import settings
 
-oauth = OAuth()
-
 OAuthType = Literal["google", "facebook"]
+
+
+class ProviderUser(TypedDict):
+    provider_id: str
+    full_name: str
+    first_name: str
+    last_name: str
+    email: str
+    picture_url: str
 
 
 class SocialAuth:
@@ -25,12 +33,31 @@ class SocialAuth:
         client = self._get_client(provider)
         token = await client.authorize_access_token(request)
 
+        if not token:
+            raise UnauthorizedException("OAuth token exchange failed")
+
         match provider:
             case "google":
-                user = token
+                if "userinfo" not in token:
+                    raise BadRequestException("Google userinfo missing")
+
+                user_data = token.get("userinfo", None)
+                user = self._normalize_user("google", user_data)
+
             case "facebook":
-                response = await client.get("me?field=id,name,email,picture", token=token)
-                user = response.json()
+                response = await client.get(
+                    "me",
+                    params={
+                        "fields": "id,name,email,first_name,last_name,picture.width(500).height(500)"
+                    },
+                    token=token,
+                )
+                fb_user_data = response.json()
+
+                if "error" in fb_user_data:
+                    raise BadRequestException("Facebook API error")
+
+                user = self._normalize_user("facebook", fb_user_data)
 
         return {"provider": provider, "user": user}
 
@@ -66,3 +93,32 @@ class SocialAuth:
         if not client:
             raise ValueError("Unsupported OAuth provider")
         return client
+
+    def _normalize_user(self, provider: OAuthType, user_info: Dict[str, Any]) -> ProviderUser:
+        match provider:
+            case "google":
+                return self._normalize_google_user(user_info)
+            case "facebook":
+                return self._normalize_facebook_user(user_info)
+            case _:
+                raise ValueError(f"Unsupported provider: {provider}")
+
+    def _normalize_google_user(self, user_info: Dict[str, Any]) -> ProviderUser:
+        return {
+            "provider_id": user_info["sub"],
+            "full_name": user_info["name"],
+            "first_name": user_info["given_name"],
+            "last_name": user_info["family_name"],
+            "email": user_info["email"],
+            "picture_url": user_info["picture"],
+        }
+
+    def _normalize_facebook_user(self, user_info: Dict[str, Any]) -> ProviderUser:
+        return {
+            "provider_id": user_info["id"],
+            "full_name": user_info["name"],
+            "email": user_info["email"],
+            "picture_url": user_info["picture"]["data"]["url"],
+            "first_name": user_info["first_name"],
+            "last_name": user_info["last_name"],
+        }
