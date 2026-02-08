@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Request, Response, status
 
 from app.controllers import AuthController
 from app.schemas.request.auth_request import AuthLogin, AuthLogout, AuthRegister
@@ -16,31 +16,32 @@ router = APIRouter()
 @limiter.limit("5/hour")
 async def register(
     request: Request,
+    response: Response,
     data: AuthRegister,
     controller: Annotated[AuthController, Depends(Factory.get_auth_controller)],
 ):
-    return await controller.register(
-        **data.model_dump(),
-    )
+    return await controller.register(**data.model_dump(), response=response)
 
 
 @router.post("/login", response_model=AuthRead, status_code=status.HTTP_200_OK)
 @limiter.limit("10/minute")  # type: ignore
 async def login(
     request: Request,
+    response: Response,
     data: AuthLogin,
     controller: Annotated[AuthController, Depends(Factory.get_auth_controller)],
 ):
-    return await controller.login(
-        **data.model_dump(),
-    )
+    return await controller.login(**data.model_dump(), response=response)
 
 
 @router.post("/logout", dependencies=[Depends(authentication_required)])
 @limiter.limit("10/minute")
 async def logout(
     request: Request,
+    response: Response,
     data: AuthLogout,
     controller: Annotated[AuthController, Depends(Factory.get_auth_controller)],
 ):
-    return await controller.logout(**data.model_dump(), user_id=request.state.user.id)
+    return await controller.logout(
+        **data.model_dump(), user_id=request.state.user.id, response=response
+    )

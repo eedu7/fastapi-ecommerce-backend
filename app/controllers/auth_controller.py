@@ -1,6 +1,8 @@
 from uuid import UUID
 
+from fastapi import Response
 
+from app.integrations import SocialAuth
 from app.integrations.cache.user_cache import UserCache
 from app.integrations.jwt_token_store import JWTTokenStore
 from app.models import DBUser
@@ -17,8 +19,9 @@ class AuthController(BaseController[DBUser]):
         self.user_repository = user_repository
         self.jwt_manager = JWTManager()
         self.jwt_token_store = JWTTokenStore()
+        self.social_auth = SocialAuth()
 
-    async def register(self, username: str, email: str, password: str):
+    async def register(self, username: str, email: str, password: str, response: Response):
         if await self.user_repository.get_by_email(email):
             raise BadRequestException("Email already exists")
 
@@ -32,22 +35,25 @@ class AuthController(BaseController[DBUser]):
                 "password": PasswordManager.hash(password),
             }
         )
+        token = self._get_token(user)
+        self._set_cookies(response, token)
 
-        return {"user": user, "token": self._get_token(user)}
+        return {"user": user, "token": token}
 
-    async def login(
-        self,
-        email: str,
-        password: str,
-    ):
+    async def login(self, email: str, password: str, response: Response):
         user = await self.user_repository.get_by_email(email)
 
         if user is None or not PasswordManager.verify(password, user.password):
             raise UnauthorizedException("Invalid email or password")
 
-        return {"user": user, "token": self._get_token(user)}
+        token = self._get_token(user)
+        self._set_cookies(response, token)
 
-    async def logout(self, user_id: UUID, access_token: str, refresh_token: str):
+        return {"user": user, "token": token}
+
+    async def logout(
+        self, user_id: UUID, access_token: str, refresh_token: str, response: Response
+    ):
         try:
             access_jti = self.jwt_manager.get_jti(access_token)
             refresh_jti = self.jwt_manager.get_jti(refresh_token)
@@ -57,10 +63,12 @@ class AuthController(BaseController[DBUser]):
             await self.jwt_token_store.store_token(access_jti)
             await self.jwt_token_store.store_token(refresh_jti)
 
+            self._delete_cookies(response)
+
         except Exception:
             raise BadRequestException("Logout failed")
 
-    async def refresh_token(self, refresh_token: str):
+    async def refresh_token(self, refresh_token: str, response: Response):
         jti = self.jwt_manager.get_jti(refresh_token)
         blacklisted = await self.jwt_token_store.is_token_blacklisted(jti)
 
@@ -77,7 +85,11 @@ class AuthController(BaseController[DBUser]):
 
         await self.jwt_token_store.store_token(jti, "refresh")
 
-        return self._get_token(user)
+        token = self._get_token(user)
+
+        self._set_cookies(response, token)
+
+        return token
 
     def _get_token(self, user: DBUser) -> Token:
         payload = {
@@ -94,3 +106,11 @@ class AuthController(BaseController[DBUser]):
             raise BadRequestException("Token construction failed")
 
         return Token(access_token=access_token, refresh_token=refresh_token)
+
+    def _set_cookies(self, response: Response, token: Token) -> None:
+        response.set_cookie(key="accessToken", value=token.access_token)
+        response.set_cookie(key="refreshToken", value=token.refresh_token)
+
+    def _delete_cookies(self, response: Response) -> None:
+        response.delete_cookie("accessToken")
+        response.delete_cookie("refreshToken")
