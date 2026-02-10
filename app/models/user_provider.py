@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 from sqlalchemy import UUID, Enum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.controllers import AuthController
 from core.database import Base
 from core.database.mixins import PrimaryKeyMixin, TimestampMixin
 
@@ -23,7 +22,7 @@ class AuthProvider(StrEnum):
 class DBUserProvider(Base, PrimaryKeyMixin, TimestampMixin):
     __tablename__ = "user_providers"
 
-    provider: Mapped[AuthController] = mapped_column(Enum(AuthProvider), name="auth_provider_enum")
+    provider: Mapped[AuthProvider] = mapped_column(Enum(AuthProvider), name="auth_provider_enum")
     provider_user_id: Mapped[str] = mapped_column(
         String(255), nullable=False, comment="User ID from the OAuth provider"
     )
