@@ -29,7 +29,7 @@ class SocialAuth:
         redirect_uri = f"{self.base_redirect_uri}/{provider}/callback"
         return await client.authorize_redirect(request, redirect_uri)
 
-    async def callback(self, request: Request, provider: OAuthType):
+    async def callback(self, request: Request, provider: OAuthType) -> ProviderUser:
         client = self._get_client(provider)
         token = await client.authorize_access_token(request)
 
@@ -42,7 +42,7 @@ class SocialAuth:
                     raise BadRequestException("Google userinfo missing")
 
                 user_data = token.get("userinfo", None)
-                user = self._normalize_user("google", user_data)
+                return self._normalize_user("google", user_data)
 
             case "facebook":
                 response = await client.get(
@@ -57,9 +57,7 @@ class SocialAuth:
                 if "error" in fb_user_data:
                     raise BadRequestException("Facebook API error")
 
-                user = self._normalize_user("facebook", fb_user_data)
-
-        return {"provider": provider, "user": user}
+                return self._normalize_user("facebook", fb_user_data)
 
     def _register_providers(self) -> None:
         self._register_google()

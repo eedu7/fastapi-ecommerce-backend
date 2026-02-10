@@ -6,8 +6,8 @@ from app.integrations import SocialAuth
 from app.integrations.cache.user_cache import UserCache
 from app.integrations.jwt_token_store import JWTTokenStore
 from app.integrations.social_auth import OAuthType
-from app.models import DBUser
-from app.repositories import UserRepository
+from app.models import AuthProvider, DBUser
+from app.repositories import UserProviderRepository, UserRepository, UserRoleRepository
 from app.schemas.extras import Token
 from core.controller import BaseController
 from core.exceptions import BadRequestException, NotFoundException, UnauthorizedException
@@ -15,36 +15,63 @@ from core.security import JWTManager, PasswordManager
 
 
 class AuthController(BaseController[DBUser]):
-    def __init__(self, user_repository: UserRepository) -> None:
+    def __init__(
+        self,
+        user_repository: UserRepository,
+        user_role_repository: UserRoleRepository,
+        user_provider_repository: UserProviderRepository,
+    ) -> None:
         super().__init__(DBUser, user_repository)
         self.user_repository = user_repository
+        self.user_role_repository = user_role_repository
+        self.user_provider_repository = user_provider_repository
+
         self.jwt_manager = JWTManager()
         self.jwt_token_store = JWTTokenStore()
         self.social_auth = SocialAuth()
 
-    async def register(self, username: str, email: str, password: str, response: Response):
+    async def register(
+        self, response: Response, username: str, email: str, password: str | None = None
+    ):
         if await self.user_repository.get_by_email(email):
             raise BadRequestException("Email already exists")
 
         if await self.user_repository.get_by_username(username):
             raise BadRequestException("Username already exists")
 
-        user = await self.create(
+        user = await self.user_repository.create(
             {
                 "username": username,
                 "email": email,
-                "password": PasswordManager.hash(password),
+                "password": PasswordManager.hash(password) if password else None,
             }
         )
+        await self._flush()
+
+        await self.user_role_repository.create({"user_id": user.id})
+        await self.user_provider_repository.create(
+            {
+                "user_id": user.id,
+                "provider": AuthProvider.EMAIL,
+                "provider_user_id": str(user.id),
+                "provider_email": user.email,
+            }
+        )
+
+        await self._commit()
+
         token = self._get_token(user)
         self._set_cookies(response, token)
 
         return {"user": user, "token": token}
 
-    async def login(self, email: str, password: str, response: Response):
+    async def login(self, response: Response, email: str, password: str | None = None):
         user = await self.user_repository.get_by_email(email)
 
-        if user is None or not PasswordManager.verify(password, user.password):
+        if user is None:
+            raise UnauthorizedException("Invalid email or password")
+
+        if password and not PasswordManager.verify(password, user.password):
             raise UnauthorizedException("Invalid email or password")
 
         token = self._get_token(user)
@@ -54,6 +81,38 @@ class AuthController(BaseController[DBUser]):
 
     async def social_login(self, request: Request, provider: OAuthType) -> None:
         return await self.social_auth.login(request, provider)
+
+    async def social_login_callback(
+        self, request: Request, response: Response, provider: OAuthType
+    ):
+        call_user = await self.social_auth.callback(request, provider)
+
+        exists = await self.user_repository.get_by_email(call_user["email"])
+
+        if exists:
+            return await self.login(response=response, email=call_user["email"])
+        else:
+            user = await self.user_repository.create(
+                {
+                    "username": call_user["full_name"],
+                    "email": call_user["email"],
+                }
+            )
+            await self._flush()
+            await self.user_role_repository.create({"user_id": user.id})
+            await self.user_provider_repository.create(
+                {
+                    "user_id": user.id,
+                    "provider": provider.upper(),
+                    "provider_user_id": call_user["provider_id"],
+                    "provider_email": call_user["email"],
+                }
+            )
+            await self._commit()
+            token = self._get_token(user)
+            self._set_cookies(response, token)
+
+            return {"user": user, "token": token}
 
     async def logout(
         self, user_id: UUID, access_token: str, refresh_token: str, response: Response

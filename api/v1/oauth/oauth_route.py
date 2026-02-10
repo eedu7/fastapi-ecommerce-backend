@@ -1,9 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path, Request
+from fastapi import APIRouter, Depends, Path, Request, Response
 
 from app.controllers import AuthController
-from app.integrations.social_auth import OAuthType, SocialAuth
+from app.integrations.social_auth import OAuthType
 from core.factory import Factory
 
 router = APIRouter()
@@ -21,7 +21,10 @@ async def social_login(
 @router.get("/{provider}/callback")
 async def social_login_callback(
     request: Request,
+    response: Response,
     provider: Annotated[OAuthType, Path()],
-    oauth: Annotated[SocialAuth, Depends(SocialAuth)],
+    controller: Annotated[AuthController, Depends(Factory.get_auth_controller)],
 ):
-    return await oauth.callback(request=request, provider=provider)
+    return await controller.social_login_callback(
+        request=request, response=response, provider=provider
+    )
