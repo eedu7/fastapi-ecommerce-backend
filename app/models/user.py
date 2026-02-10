@@ -9,6 +9,7 @@ from core.database import Base
 from core.database.mixins import PrimaryKeyMixin, TimestampMixin
 
 if TYPE_CHECKING:
+    from .user_provider import DBUserProvider
     from .user_roles import DBUserRole
 
 
@@ -21,12 +22,15 @@ class DBUser(Base, PrimaryKeyMixin, TimestampMixin):
     )
     password: Mapped[str] = mapped_column(
         String(255),
-        nullable=False,
+        nullable=True,
     )
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Relationships
     roles: Mapped[List["DBUserRole"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan", lazy="selectin"
+    )
+    providers: Mapped[List["DBUserProvider"]] = relationship(
         back_populates="user", cascade="all, delete-orphan", lazy="selectin"
     )
 
