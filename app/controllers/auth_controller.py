@@ -1,10 +1,11 @@
 from uuid import UUID
 
-from fastapi import Response
+from fastapi import Request, Response
 
 from app.integrations import SocialAuth
 from app.integrations.cache.user_cache import UserCache
 from app.integrations.jwt_token_store import JWTTokenStore
+from app.integrations.social_auth import OAuthType
 from app.models import DBUser
 from app.repositories import UserRepository
 from app.schemas.extras import Token
@@ -50,6 +51,9 @@ class AuthController(BaseController[DBUser]):
         self._set_cookies(response, token)
 
         return {"user": user, "token": token}
+
+    async def social_login(self, request: Request, provider: OAuthType) -> None:
+        return await self.social_auth.login(request, provider)
 
     async def logout(
         self, user_id: UUID, access_token: str, refresh_token: str, response: Response
